@@ -13,7 +13,7 @@ void readPriceCsv(char from[PRICE_LENGTH][50], char to[PRICE_LENGTH][50], int* a
     char useless[5][STRING_MAX_SIZE]; // For Header
 
     // handle FileNotFoundException
-    if(!price){fprintf(stderr, "file to open csv file"); return 1;}
+    if(!price){fprintf(stderr, "file to open csv file");}
 
     fseek(price, 0, SEEK_SET);
 
@@ -51,6 +51,39 @@ void readPriceCsv(char from[PRICE_LENGTH][50], char to[PRICE_LENGTH][50], int* a
     }
 
     fclose(price);
+}
+
+#define BUFFER_RANGE 65536
+
+int fetchData(int from, char* to) {
+    FILE* price = fopen("duration.txt", "r");
+    char line[BUFFER_RANGE];
+    int count = 0; // while loop count
+    while(fgets(line, BUFFER_RANGE, price) != NULL){
+        //brute force split json-object
+        if(count == from){ // read txt specific line: represent corrospoding timelist (Starting-point to different End-point)
+            char* result = strtok(line, "\""); // split by "
+            char temp[100]; // for storage splited string
+            int nextLine = 0; // a variable to define what to do
+            while(result != "}"){
+                // 1: start code, 2: endcode ~:3: start time 4: end time, 5 = 1
+                if(nextLine == 2){ // Eg: {"A01":"=>15"}
+                    return (int)result;
+                    nextLine = 0; // skip this stupid function
+                } else if(nextLine == 1){ // skip: Eg: {"A01"=>:"15"}
+                    nextLine++;
+                }
+                strcpy(temp, result);
+                if(strcmp(temp, to) == 0){ //Found Location: Eg: {=>"A01":"15"}
+                    nextLine = 1;
+                }
+                result = strtok(NULL, "\"");
+            }
+
+        }
+        count++;
+    }
+    return 0; //represent error
 }
 
 int main() {
@@ -160,4 +193,11 @@ int main() {
     }
 
     #pragma endregion printPrice
+
+    #pragma region fetchHttpRequest->fail->readJson
+
+    int duration = fetchData(index_start, alias[index_end]);
+    printf("Time Usage Around: %s min(s)", duration);
+
+    #pragma endregion fetchHttpRequest->fail->readJson
 }
